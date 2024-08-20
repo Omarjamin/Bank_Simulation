@@ -1,0 +1,631 @@
+from abc import ABC, abstractmethod
+import tkinter as tk
+from tkinter import messagebox
+
+
+class CustomerInfoSingleton:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.customer_info = {}
+        return cls._instance
+
+    def get_customer_info(self):
+        return self.customer_info
+
+    def update_customer_info(self, username, data):
+        self.customer_info[username] = data
+
+customer_info_singleton = CustomerInfoSingleton()
+customer_info = customer_info_singleton.get_customer_info()
+
+class Widgets(ABC):
+    def __init__(self, types):
+        self.types = types
+
+    @abstractmethod
+    def insert(self, master):
+        pass
+
+class CreateDropdown(Widgets): 
+    def __init__(self, options, default_option):
+        super().__init__(types="Dropdown")
+        self.options = options
+        self.default_option = default_option
+        self.variable = tk.StringVar()
+        self.variable.set(self.default_option)
+        self.widget = None
+
+    def insert(self, master):
+        self.widget = tk.OptionMenu(master, self.variable, *self.options)
+        self.widget.pack()
+                
+
+class CreateButton(Widgets):
+    def __init__(self, text, font_style, font_size, font_color, command):
+        super().__init__(types="Button")
+        self.text = text
+        self.font_style = font_style
+        self.font_size = font_size
+        self.font_color = font_color
+        self.command = command
+        self.widget = None
+
+    def insert(self, master):
+        self.widget = tk.Button(
+            master,
+            text=self.text,
+            font=(self.font_style, self.font_size),
+            fg=self.font_color,
+            command=self.command
+        )
+        self.widget.pack()
+
+class CreateLabel(Widgets):
+    def __init__(self, text, font_style, font_size, font_color):
+        super().__init__(types="Label")
+        self.text = text
+        self.font_style = font_style
+        self.font_size = font_size
+        self.font_color = font_color
+        self.widget = None
+
+    def insert(self, master):
+        self.widget = tk.Label(
+            master,
+            text=self.text,
+            font=(self.font_style, self.font_size),
+            fg=self.font_color
+        )
+        self.widget.pack()
+
+class CreateEntry(Widgets):
+    def __init__(self, font_style, font_size):
+        super().__init__(types="Entry")
+        self.font_style = font_style
+        self.font_size = font_size
+        self.widget = None
+
+    def insert(self, master):
+        self.widget = tk.Entry(
+            master,
+            font=(self.font_style, self.font_size)
+        )
+        self.widget.pack()
+
+    def get(self):
+        if self.widget:
+            return self.widget.get()
+        else:
+            return None
+
+
+class CreateWindow:
+    def __init__(self, title):
+        self.title = title
+        self.root = tk.Tk()
+
+    def run(self):
+        self.root.mainloop()
+
+class WidgetFactory(ABC):
+    @abstractmethod
+    def create_widget(self):
+        pass
+
+class ConcreteWidgetFactory(WidgetFactory):
+    def create_widget(self, widget_type, master, **kwargs):
+        if widget_type == "Button":
+            return CreateButton(**kwargs)
+        elif widget_type == "Label":
+            return CreateLabel(**kwargs)
+        elif widget_type == "Entry":
+            return CreateEntry(**kwargs)
+        elif widget_type == "Dropdown":  # 
+            return CreateDropdown(**kwargs)
+        else:
+            raise ValueError(f"Invalid widget type: {widget_type}")
+
+# Subsystem classes
+class DefaultParams:
+    @staticmethod
+    def get_params(widget_type, **kwargs):
+        params = {
+            "Label": {
+                "font_style": "Arial",
+                "font_size": 12,
+                "font_color": "black"
+            },
+            "Entry": {
+                "font_style": "Courier",
+                "font_size": 12
+            },
+            "Button": {
+                "font_style": "Arial",
+                "font_size": 10,
+                "font_color": "black"
+            }
+        }
+
+        default_params = params.get(widget_type, {})
+        default_params.update(kwargs)
+        return default_params
+
+
+
+class Menu:
+    @staticmethod
+    def perform_action():
+        window1 = CreateWindow(title="Bank Application")
+        widget_factory = ConcreteWidgetFactory()
+        
+        header_label_params = DefaultParams.get_params("Label", text="Bank")
+        header_label = widget_factory.create_widget("Label", window1.root, **header_label_params)
+        header_label.insert(window1.root)
+        
+        def perform_create_account():
+            window1.root.withdraw()
+            CreateAccount.perform_action()
+        
+        
+        def perform_login():
+            window_login = CreateWindow(title="Login")
+            widget_factory = ConcreteWidgetFactory()
+
+            username_label_params = DefaultParams.get_params("Label", text="Username:")
+            username_label = widget_factory.create_widget("Label", window_login.root, **username_label_params)
+            username_label.insert(window_login.root)
+
+            username_entry_params = DefaultParams.get_params("Entry")
+            username_entry = widget_factory.create_widget("Entry", window_login.root, **username_entry_params)
+            username_entry.insert(window_login.root)
+            password_label_params = DefaultParams.get_params("Label", text="Password:")
+            password_label = widget_factory.create_widget("Label", window_login.root, **password_label_params)
+            password_label.insert(window_login.root)
+
+            password_entry_params = DefaultParams.get_params("Entry")
+            password_entry = widget_factory.create_widget("Entry", window_login.root, **password_entry_params)
+            password_entry.insert(window_login.root)
+            password_entry.widget.config(show="*")
+            window1.root.withdraw()  
+
+
+            def confirm_login():
+                Login.perform_action(username_entry, password_entry, window_login.root)
+                
+            login_button_params = DefaultParams.get_params(
+                "Button",
+                text="Login",
+                command=confirm_login)
+                
+            login_button = widget_factory.create_widget("Button", window_login.root, **login_button_params)
+            login_button.insert(window_login.root)
+            
+            
+            window_login.run()
+       
+                
+
+        login_button_params = DefaultParams.get_params(
+            "Button",
+            text="Login",
+            command=perform_login
+        )
+        login_button = widget_factory.create_widget("Button", window1.root, **login_button_params)
+        login_button.insert(window1.root)
+        
+        
+        
+        create_account_button_params = DefaultParams.get_params(
+            "Button",
+            text="Create Account",
+            command=perform_create_account
+        )
+        create_account_button = widget_factory.create_widget("Button", window1.root, **create_account_button_params)
+        create_account_button.insert(window1.root)
+
+        exit_button_params = DefaultParams.get_params(
+            "Button",
+            text="Exit",
+            command=window1.root.destroy
+        )
+        exit_button = widget_factory.create_widget("Button", window1.root, **exit_button_params)
+        exit_button.insert(window1.root)
+
+        window1.run()
+
+
+
+
+class CreateAccount:
+    	 	    	  
+    savings = {}
+    checking = {}
+    joint = {}	
+     	    	    
+    @staticmethod
+    def perform_action():
+        window_create_account = CreateWindow(title="Bank Creation")
+        widget_factory = ConcreteWidgetFactory()
+        
+        def enable_confirm_button():
+            required_fields = [
+                firstname_entry,
+                lastname_entry,
+                birthday_entry,
+                email_entry,
+                address_entry,
+                username_entry,
+                password_entry,
+                account_type_entry,
+                initial_balance_entry
+            ]
+
+            all_filled = all(field.get() for field in required_fields)
+
+            if all_filled:
+                create_button.widget.config(state="normal")
+            else:
+                create_button.widget.config(state="disabled")
+
+        firstname_label_params = DefaultParams.get_params("Label", text="Enter your first name:")
+        firstname_label = widget_factory.create_widget("Label", window_create_account.root, **firstname_label_params)
+        firstname_label.insert(window_create_account.root)
+        
+        firstname_entry_params = DefaultParams.get_params("Entry")
+        firstname_entry = widget_factory.create_widget("Entry", window_create_account.root, **firstname_entry_params)
+        firstname_entry.insert(window_create_account.root)
+        firstname_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+
+        lastname_label_params = DefaultParams.get_params("Label", text="Enter your last name:")
+        lastname_label = widget_factory.create_widget("Label", window_create_account.root, **lastname_label_params)
+        lastname_label.insert(window_create_account.root)
+        
+        lastname_entry_params = DefaultParams.get_params("Entry")
+        lastname_entry = widget_factory.create_widget("Entry", window_create_account.root, **lastname_entry_params)
+        lastname_entry.insert(window_create_account.root)
+        lastname_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+
+        # Birthday Label and Entry
+        birthday_label_params = DefaultParams.get_params("Label", text="Enter your birthday:")
+        birthday_label = widget_factory.create_widget("Label", window_create_account.root, **birthday_label_params)
+        birthday_label.insert(window_create_account.root)
+        
+        birthday_entry_params = DefaultParams.get_params("Entry")
+        birthday_entry = widget_factory.create_widget("Entry", window_create_account.root, **birthday_entry_params)
+        birthday_entry.insert(window_create_account.root)
+        birthday_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+
+        # Email Label and Entry
+        email_label_params = DefaultParams.get_params("Label", text="Enter your email:")
+        email_label = widget_factory.create_widget("Label", window_create_account.root, **email_label_params)
+        email_label.insert(window_create_account.root)
+        
+        email_entry_params = DefaultParams.get_params("Entry")
+        email_entry =widget_factory.create_widget("Entry", window_create_account.root, **email_entry_params)
+        email_entry.insert(window_create_account.root)
+        email_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+
+        # Permanent Address Label and Entry
+        address_label_params = DefaultParams.get_params("Label", text="Enter your permanent address:")
+        address_label =widget_factory.create_widget("Label", window_create_account.root, **address_label_params)
+        address_label.insert(window_create_account.root)
+        
+        address_entry_params = DefaultParams.get_params("Entry")
+        address_entry = widget_factory.create_widget("Entry", window_create_account.root, **address_entry_params)
+        address_entry.insert(window_create_account.root)
+        address_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+        
+        username_label_params = DefaultParams.get_params(
+            "Label",
+            text="Enter your username:"
+        )
+        username_label = widget_factory.create_widget("Label", window_create_account.root, **username_label_params)
+        username_label.insert(window_create_account.root)
+
+        username_entry_params = DefaultParams.get_params("Entry")
+        username_entry = widget_factory.create_widget("Entry", window_create_account.root, **username_entry_params)
+        username_entry.insert(window_create_account.root)
+        username_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+
+        password_label_params = DefaultParams.get_params(
+            "Label",
+            text="Enter your password:"
+        )
+        password_label = widget_factory.create_widget("Label", window_create_account.root, **password_label_params)
+        password_label.insert(window_create_account.root)
+
+        password_entry_params = DefaultParams.get_params("Entry")
+        password_entry = widget_factory.create_widget("Entry", window_create_account.root, **password_entry_params)
+        password_entry.insert(window_create_account.root)
+        password_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+        
+        account_type_label_params = DefaultParams.get_params("Label", text="Enter account type (Savings/Checking/Joint):")
+        account_type_label = widget_factory.create_widget("Label", window_create_account.root, **account_type_label_params)
+        account_type_label.insert(window_create_account.root)
+
+        account_type_entry_params = DefaultParams.get_params("Entry")
+        account_type_entry = widget_factory.create_widget("Entry", window_create_account.root, **account_type_entry_params)
+        account_type_entry.insert(window_create_account.root)
+        account_type_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+        
+        initial_balance_label_params = DefaultParams.get_params("Label", text="Enter initial balance:")
+        initial_balance_label = widget_factory.create_widget("Label", window_create_account.root, **initial_balance_label_params)
+        initial_balance_label.insert(window_create_account.root)
+
+        initial_balance_entry_params = DefaultParams.get_params("Entry")
+        initial_balance_entry = widget_factory.create_widget("Entry", window_create_account.root, **initial_balance_entry_params)
+        initial_balance_entry.insert(window_create_account.root)
+        initial_balance_entry.widget.bind("<Key>", lambda event: enable_confirm_button())
+
+
+       
+        
+        create_button_params = DefaultParams.get_params("Button", text="Confirm", command=UserInterfaceFacade.show_menu)
+        create_button = widget_factory.create_widget("Button", window_create_account.root, **create_button_params)
+        create_button.insert(window_create_account.root)
+        create_button.widget.config(state="disabled")
+        
+        def confirm_action():
+            first_name = firstname_entry.get()
+            last_name = lastname_entry.get()
+            birthday = birthday_entry.get()
+            email = email_entry.get()
+            address = address_entry.get()
+            username = username_entry.get()
+            password = password_entry.get()
+        
+        
+            account_type = account_type_entry.get()
+            initial_balance = initial_balance_entry.get() or 0
+
+            if account_type.lower() == "savings":
+                CreateAccount.savings[username] = {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "birthday": birthday,
+                    "email": email,
+                    "address": address,
+                    "password": password,
+                    "balance": initial_balance,
+                    "account_type": account_type
+                }
+            elif account_type.lower() == "checking":
+                CreateAccount.checking[username] = {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "birthday": birthday,
+                    "email": email,
+                    "address": address,
+                    "password": password,
+                    "balance": initial_balance,
+                    "account_type": account_type
+                }
+            elif account_type.lower() == "joint":
+                CreateAccount.joint[username] = {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "birthday": birthday,
+                    "email": email,
+                    "address": address,
+                    "password": password,
+                    "balance": initial_balance,
+                    "account_type": account_type
+                }
+
+            
+            customer_info[username] = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "birthday": birthday,
+                "email": email,
+                "address": address,
+                "password": password,
+                "balance": initial_balance,
+                "account_type": account_type
+            }
+
+            window_create_account.root.destroy()
+            UserInterfaceFacade().show_menu()
+
+        create_button.widget.config(command=confirm_action)
+
+        window_create_account.root.lift()
+        window_create_account.run()
+
+    
+
+# Command interface
+class Command(ABC):
+    @abstractmethod
+    def execute(self):
+        pass
+
+# Command classes for deposit and withdraw
+class DepositCommand(Command):
+    def __init__(self, amount, customer_info, username):
+        self.amount = amount
+        self.customer_info = customer_info
+        self.username = username
+
+    def execute(self):
+        current_balance = float(self.customer_info[self.username]["balance"])  # Convert string balance to float
+        self.customer_info[self.username]["balance"] = str(current_balance + self.amount)  # Add amount to balance and convert back to string
+
+
+
+class WithdrawCommand(Command):
+    def __init__(self, amount, customer_info, username):
+        self.amount = amount
+        self.customer_info = customer_info
+        self.username = username
+
+    def execute(self):
+        current_balance = float(self.customer_info[self.username]["balance"])  # Convert string balance to float
+        if self.amount <= current_balance:
+            self.customer_info[self.username]["balance"] = str(current_balance - self.amount)  # Convert back to string after subtraction
+        else:
+            print("Insufficient balance")
+
+########£###£££#####
+class Login:
+    
+    @staticmethod
+    def perform_action(username_entry, password_entry, root):
+                                   
+        entered_username = username_entry.get()
+        entered_password = password_entry.get()
+
+        if entered_username in customer_info and customer_info[entered_username]["password"] == entered_password:
+            root.destroy()  
+            
+           
+            window_after_login = CreateWindow(title="Bank Transactions")
+            widget_factory = ConcreteWidgetFactory()
+            
+            header_label_params = DefaultParams.get_params("Label", text="Transaction", font_size=20)
+            
+            header_label = widget_factory.create_widget("Label", window_after_login.root, **header_label_params)
+            header_label.insert(window_after_login.root)
+            
+            
+            def back_to_menu():
+                window_after_login.root.destroy()
+                UserInterfaceFacade().show_menu()
+            back_to_menu_button_params = DefaultParams.get_params(
+                "Button",
+                text="Back to Menu",
+                command=back_to_menu)
+                
+            back_to_menu_button = widget_factory.create_widget("Button", window_after_login.root, **back_to_menu_button_params)
+            back_to_menu_button.insert(window_after_login.root)
+            
+                        
+            initial_balance = customer_info[entered_username]["balance"]
+            
+            
+            balance_label_params = DefaultParams.get_params("Label", text="Initial Balance:")
+            balance_label = widget_factory.create_widget("Label", window_after_login.root, **balance_label_params)
+            balance_label.insert(window_after_login.root)
+            
+            initial_balance_entry_params = DefaultParams.get_params("Entry")
+            initial_balance_entry = widget_factory.create_widget("Entry", window_after_login.root, **initial_balance_entry_params)
+            initial_balance_entry.insert(window_after_login.root)
+            initial_balance_entry.widget.config(state='readonly')
+            initial_balance_entry.widget.insert(0, initial_balance)
+            
+            # Button for deposit:)
+            def deposit_action():
+                amount = float(deposit_entry.get() or 0)
+                deposit_command = DepositCommand(amount, customer_info, entered_username)
+                deposit_command.execute()
+                check_balance_action()
+            
+            deposit_button_params = DefaultParams.get_params(
+                "Button",
+                text="Deposit",
+                command=deposit_action
+            )
+            deposit_button = widget_factory.create_widget("Button", window_after_login.root, **deposit_button_params)
+            deposit_button.insert(window_after_login.root)
+            
+            deposit_label_params = DefaultParams.get_params("Label", text="Enter amount to deposit:")
+            deposit_label = widget_factory.create_widget("Label", window_after_login.root, **deposit_label_params)
+            deposit_label.insert(window_after_login.root)
+            
+            deposit_entry_params = DefaultParams.get_params("Entry")
+            deposit_entry = widget_factory.create_widget("Entry", window_after_login.root, **deposit_entry_params)
+            deposit_entry.insert(window_after_login.root)
+            
+            # Button for withdraw:)
+            def withdraw_action():
+                amount = float(withdraw_entry.get() or 0)
+                withdraw_command = WithdrawCommand(amount, customer_info, entered_username)
+                withdraw_command.execute()
+                check_balance_action()
+                
+            
+            withdraw_button_params = DefaultParams.get_params(
+                "Button",
+                text="Withdraw",
+                command=withdraw_action
+            )
+            withdraw_button = widget_factory.create_widget("Button", window_after_login.root, **withdraw_button_params)
+            withdraw_button.insert(window_after_login.root)
+            
+            withdraw_label_params = DefaultParams.get_params("Label", text="Enter amount to withdraw:")
+            withdraw_label = widget_factory.create_widget("Label", window_after_login.root, **withdraw_label_params)
+            withdraw_label.insert(window_after_login.root)
+            
+            withdraw_entry_params = DefaultParams.get_params("Entry")
+            withdraw_entry = widget_factory.create_widget("Entry", window_after_login.root, **withdraw_entry_params)
+            withdraw_entry.insert(window_after_login.root)
+            
+            
+            def check_balance_action():
+                balance = customer_info[entered_username]["balance"]
+                balance_entry.widget.config(state='normal')
+                balance_entry.widget.delete(0, 'end')
+                balance_entry.widget.insert(0, balance)
+                balance_entry.widget.config(state='readonly')
+            
+            
+            check_balance_button_params = DefaultParams.get_params(
+                "Button",
+                text="Check Balance",
+                command=check_balance_action
+            )
+            check_balance_button = widget_factory.create_widget("Button", window_after_login.root, **check_balance_button_params)
+            check_balance_button.insert(window_after_login.root)
+            
+            balance_label_params = DefaultParams.get_params("Label", text="Current Balance:")
+            balance_label = widget_factory.create_widget("Label", window_after_login.root, **balance_label_params)
+            balance_label.insert(window_after_login.root)
+            
+            balance_entry_params = DefaultParams.get_params("Entry")
+            balance_entry = widget_factory.create_widget("Entry", window_after_login.root, **balance_entry_params)
+            balance_entry.insert(window_after_login.root)
+            balance_entry.widget.config(state='readonly')
+            
+            window_after_login.run()  # Run the new window
+        else:
+            messagebox.showerror("Invalid", "Invalid username or password")
+
+
+
+ 
+class Exit:
+    @staticmethod
+    def perform_action():
+        pass
+        
+        
+
+class UserInterfaceFacade:
+    def __init__(self):
+        self.default_params = DefaultParams()
+        self.menu = Menu()
+        self.create_account = CreateAccount()
+        self.login = Login()
+        self.exit = Exit()
+
+    def show_menu(self):
+        
+        self.menu.perform_action()
+
+    def create_account_action(self):
+                            
+        self.create_account.perform_action()
+  
+
+    def login_action(self):
+        self.login.perform_action()
+
+    def exit_action(self):
+        self.exit.perform_action()
+
+
+ui_facade = UserInterfaceFacade()
+ui_facade.show_menu()j
